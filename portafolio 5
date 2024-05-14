@@ -1,0 +1,62 @@
+//El sensor PIR debe conectarse a una entrada digital del Arduino y el sensor DHT22 a una entrada digital. Cuando 
+//el sensor PIR detecte movimiento el DHT22 realizará una medición de temperatura y humedad y tendrá un 
+//tiempo de espera de medio segundo enviando los datos por comunicación serial con el protocolo JSON. Cuando 
+//se esté realizando la medición, el LED debe de encenderse indicando el estado de medición, cuando esta acabe 
+//se apagará.
+
+#include "Adafruit_Sensor.h"
+#include "DHT.h"
+
+int dht22 = 2;
+int pir = 3;
+int led = 5;
+int stadopir = 0;
+
+#define DHTTYPE DHT22
+DHT dht = DHT(dht22, DHTTYPE);
+
+float humedad = 0.0;
+float temperatura = 0.0;
+
+void setup() {
+  pinMode(dht22, INPUT);
+  pinMode(pir, INPUT);
+  pinMode(led, OUTPUT);
+  Serial.begin(9600);
+  dht.begin();
+  delay(2000);
+}
+
+void loop() {
+  stadopir = digitalRead(pir);
+
+  if (stadopir == HIGH ) {
+    LeerDHT22();
+    MostarData();
+    digitalWrite(led, HIGH);
+  } else {
+    digitalWrite(led, LOW);
+  }
+
+}
+
+int LeerDHT22(){
+  // Read the humidity in %:
+  humedad = dht.readHumidity();
+  // Read the temperature as Celsius:
+  temperatura = dht.readTemperature();
+
+  return (humedad, temperatura);
+
+}
+void MostarData(){
+  Serial.print("{\"temperature\": ");
+  Serial.print(temperatura);
+  Serial.print(" \xC2\xB0");
+  Serial.print("C");
+  Serial.print(", \"humidity\": ");
+  Serial.print(humedad);
+   Serial.print(" % ");
+  Serial.println("}");
+  delay(500);
+}
