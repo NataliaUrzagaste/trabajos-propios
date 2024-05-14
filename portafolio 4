@@ -1,0 +1,129 @@
+//El sensor LDR y el potenciómetro deben conectarse a entradas analógicas del Arduino. Cuando la luz incidente 
+//en el LDR sea suficiente (80%), el LED RGB debe encenderse. El color del LED RGB debe ser controlado por la 
+//lectura del potenciómetro utilizando una salida PWM. Si la luz incidente es insuficiente, el LED RGB debe 
+//apagarse. Se debe generar 8 distintas combinaciones de colores para el LED RGB que variarán según las lecturas 
+//del potenciómetro. Mediante comunicación serial, enviar datos con el protocolo JSON indicando el estado del 
+//LED y el color de este. 
+
+
+
+int r = 11;
+int g = 10;
+int b = 9;
+int ldr = A1;
+int pot = A0;
+
+float brillo = 0.0;
+float stadopot = 0.0;
+int color = 0;
+
+void setup() {
+  // put your setup code here, to run once:
+    pinMode(ldr, INPUT);
+    pinMode(pot, INPUT);
+    pinMode(r, OUTPUT);
+    pinMode(g, OUTPUT);
+    pinMode(b, OUTPUT);
+
+    Serial.begin(9600);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  brillo = LeerLDR();
+
+    if(brillo >= 80){
+      colores(color);
+    } else {
+      analogWrite(r, 0);
+      analogWrite(g, 0);
+      analogWrite(b, 0);
+    }
+  json ();
+}
+int LeerLDR(){
+  int medicion = analogRead(ldr);
+  int ponderacion = map(medicion, 8, 1015, 0, 100);
+  return ponderacion;
+}
+
+void colores(int stadopot) {
+ stadopot = analogRead(pot);
+ color = map((stadopot), 0.0, 1023.0, 0.0, 200.0);
+
+if (color < 25){
+  analogWrite(r, 225);
+  analogWrite(g, 0);
+  analogWrite(b, 0);
+  //rojo
+} if (color >= 25 && color < 50){
+  analogWrite(r, 0);
+  analogWrite(g, 255);
+  analogWrite(b, 0);
+  // verde
+} if (color >= 50 && color < 75){
+  analogWrite(r, 0);
+  analogWrite(g, 0);
+  analogWrite(b, 255);
+  // azul
+} if (color >= 75 && color < 100){
+  analogWrite(r, 255);
+  analogWrite(g, 128);
+  analogWrite(b, 0);
+  // naranja
+} if (color >= 100 && color < 125){
+  analogWrite(r, 128);
+  analogWrite(g, 0);
+  analogWrite(b, 128);
+  // violeta
+} if (color >= 125 && color < 150){
+  analogWrite(r, 0);
+  analogWrite(g, 255);
+  analogWrite(b, 255);
+  // cyan
+} if (color >= 150 && color < 175){
+  analogWrite(r, 255);
+  analogWrite(g, 0);
+  analogWrite(b, 255);
+  // magenta
+} if (color >= 175 && color < 200){
+  analogWrite(r, 255);
+  analogWrite(g, 255);
+  analogWrite(b, 0);
+  // amarillo
+}
+}
+void json (){
+  if(brillo >= 80){
+      Serial.print("{\"estado del led\": ""\"encendido, \"");
+      if (color < 25){
+        Serial.println("el color es\": ""\"rojo\"}");
+       //rojo
+      } if (color >= 25 && color < 50){
+        Serial.println("{\"el color es\": ""\"verde\"}");
+       // verde
+      } if (color >= 50 && color < 75){
+        Serial.println("{\"el color es\": ""\"azul\"}");
+       // azul
+      } if (color >= 75 && color < 100){
+        Serial.println("{\"el color es\": ""\"naranja\"}");
+       // naranja
+       } if (color >= 100 && color < 125){
+        Serial.println("{\"el color es\": ""\"violeta\"}");
+       // violeta
+      } if (color >= 125 && color < 150){
+        Serial.println("{\"el color es\": ""\"cyan\"}");
+       // cyan
+      } if (color >= 150 && color < 175){
+        Serial.println("{\"el color es\": ""\"magenta\"}");
+       // magenta
+      } if (color >= 175 && color < 200){
+        Serial.println("{\"el colores\": ""\"amarillo\"}");
+        // amarillo   
+      }
+    } else {
+      Serial.println("{\"estado del led\": ""\"apagado\"}");
+    
+    }
+ delay(2000);
+}
