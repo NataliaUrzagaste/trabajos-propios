@@ -1,0 +1,77 @@
+//El sensor PIR, LM35 y el pulsador deben conectarse a entradas digitales del Arduino. Cuando el sensor PIR 
+detecte movimiento y la temperatura leída por el LM35 sea mayor a 55°C, el LED debe encenderse y el buzzer 
+debe emitir un sonido. Si no se detecta movimiento o la temperatura es menor a ese valor, el LED debe 
+apagarse y el buzzer debe dejar de sonar. Cuando el pulsador esté presionado, se debe de enviar un mensaje 
+con el protocolo JSON por el puerto Serial indicando el estado del LED, la temperatura y si hay movimiento o 
+no. Cuando el LED esté encendido, se debe de enviar un mensaje con el protocolo JSON por el puerto Serial. Si 
+el LED está apagado, no se envía nada. 
+
+int pir = 4;
+int led = 3;
+int buz = 5;
+int pul = 2;
+int stadopir = 0;
+int stadopul = 0;
+int lm35pin = A0;
+
+float BETA = 3950;
+int analogValue = 0;
+float celsius = 0.0;
+byte salida = 10;
+int cont = 0;
+
+
+void setup() {
+  pinMode(pir, INPUT);
+  pinMode(led, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  stadopir = digitalRead(pir);
+  stadopul = digitalRead(pul);
+  // LECTURA PARA EL LM35
+  //analogValor = analogRead(lm35pin);
+  //celsius = (analogValor * 5.0 * 100.0) / 1024.0; // Convertir el valor leído a temperatura en grados Celsius
+  // LECTURA PARA EL NTC
+  analogValue = analogRead(A0);
+  celsius = 1 / (log(1 / (1023. / analogValue - 1)) / BETA + 1.0 / 298.15) - 273.15;
+
+  if (stadopir == HIGH ) {
+    if (celsius > 55.0) {
+    // Enciende el LED 
+     digitalWrite(led, HIGH);
+     analogWrite(buz, salida);
+     if (stadopul == HIGH){
+      Serial.print("{\"el led esta encendido");
+      delay(500);
+      Mostarjson();
+      cont = 0;
+      }
+  } else {
+    // Apaga el LED
+    digitalWrite(led, LOW);
+    digitalWrite(buz, LOW);
+  }
+  } else {
+    if (cont == 0){
+      Serial.println("{ no hay movimiento }");
+      cont = 1;
+    }
+    digitalWrite(led, LOW);
+    digitalWrite(buz, LOW);
+  }
+}
+
+void Mostarjson() {
+  Serial.print("\"la temperatura es\": ");
+  Serial.print(celsius);
+  Serial.print(" ℃ ");
+  Serial.print("\"estado del pir es\:");
+  if (stadopir == 1){
+   Serial.println("\"hay movimiento\"}");
+  } else {
+   Serial.println("\"no hay movimiento\"}");
+  }
+  delay(500);
+}
