@@ -1,0 +1,157 @@
+//El sensor HC-SR04 debe conectarse a las entradas digitales del Arduino y el pulsador a una entrada digital. 
+//Cuando un objeto se encuentre a una distancia menor a 15 cm y el pulsador esté presionado, el LED debe 
+//encenderse. Si el objeto se aleja más allá de ese valor o el pulsador no está presionado, el LED debe apagarse. 
+//Enviar un mensaje por comunicación serial cuando se de el caso de éxito con un contador que indique el 
+//número de falsos positivo y verdaderos positivos, los falsos positivos son cuando se presiona el pulsador pero el 
+//objeto está lejos y los verdaderos positivos son cuando se cumplen ambas condiciones. 
+
+#include "Adafruit_Sensor.h"
+#include "DHT.h"
+
+#define ldr A0
+#define r 5
+#define g 6
+#define b 9
+#define dht22 2
+#define DHTTYPE DHT22   // DHT 22  (AM2302)
+#define trigPin 3    // Disparador (Trigger)
+#define echoPin 4    // Eco (Echo)
+#define buzzer 10
+
+// Initialize DHT sensor for normal 16mhz Arduino:
+DHT dht = DHT(dht22, DHTTYPE);
+
+int lecturaLDR = 0;
+float humedad = 0.0;
+float temperatura = 0.0;
+long med_cm = 0.0;
+byte salida = 10;
+
+void setup() {
+  pinMode(ldr, INPUT);
+
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  pinMode(r, OUTPUT);
+  pinMode(g, OUTPUT);
+  pinMode(b, OUTPUT);
+
+  Serial.begin(9600);
+
+  // Setup sensor:
+  dht.begin();
+  delay(2000);
+
+
+}
+
+void loop() {
+  // actualización de variables (lectura de las variables)
+  lecturaLDR = LeerLDR();
+  med_cm = Lecturar_Distancia(50, 1);
+  LeerDHT22();
+  MostarData();
+
+  //Lógica encendido de luces
+  if(lecturaLDR >= 80){
+    if(temperatura < 10.0){
+      analogWrite(r, 0);
+      analogWrite(g, 0);
+      analogWrite(b, 255);
+    }
+    if(temperatura >= 10.0 && temperatura < 18.0){
+      analogWrite(r, 0);
+      analogWrite(g, 125);
+      analogWrite(b, 125);
+    }
+    if(temperatura >= 18.0 && temperatura < 25.0){
+      analogWrite(r, 125);
+      analogWrite(g, 125);
+      analogWrite(b, 0);
+    }
+    if(temperatura >= 25.0){
+      analogWrite(r, 255);
+      analogWrite(g, 0);
+      analogWrite(b, 0);
+    }
+  }else{
+    digitalWrite(r, LOW);
+    digitalWrite(g, LOW);
+    digitalWrite(b, LOW);
+  }
+  
+  //Lógica del buzzer
+  if(med_cm >= 15){
+    analogWrite(buzzer, salida);
+  }else{
+    analogWrite(buzzer, LOW);
+  }
+
+  delay(300);
+
+}
+
+
+
+
+int LeerLDR(){
+  int medicion = analogRead(ldr);
+  int ponderacion = map(medicion, 8, 1015, 0, 100);
+  return ponderacion;
+
+}
+
+void LeerDHT22(){
+  // Read the humidity in %:
+  humedad = dht.readHumidity();
+  // Read the temperature as Celsius:
+  temperatura = dht.readTemperature();
+
+}
+
+long Lecturar_Distancia(short muestreo, short unidad){
+  long duration, cm, inches;
+  // El sensor se activa con un pulso ALTO de 10 microsegundos o más
+  // Emite un breve pulso BAJO antes para asegurar un pulso ALTO limpio:
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+ 
+  // Lee la señal del sensor: un pulso ALTO cuya duración
+  // es el tiempo (en microsegundos) desde el envío del
+  // ping hasta la recepción de su eco de un objeto.
+  pinMode(echoPin, INPUT);
+  duration = pulseIn(echoPin, HIGH);
+ 
+  // Convierte el tiempo en distancia
+  if(unidad==1){
+    // Divide entre 29.1 o multiplica por 0.0343
+    cm = (duration/2) / 29.1;
+    return cm;
+  }
+  if(unidad==2){
+    // Divide entre 74 o multiplica por 0.0135
+    inches = (duration/2) / 74;
+    return inches;
+  }
+  
+  delay(muestreo);
+}
+
+void MostarData(){
+  Serial.print("LDR: ");
+  Serial.print(lecturaLDR);
+  Serial.print("; Distancia: ");
+  Serial.println(med_cm);
+  Serial.print("Humidity: ");
+  Serial.print(humedad);
+  Serial.print(" % ");
+  Serial.print("Temperature: ");
+  Serial.print(temperatura);
+  Serial.print(" \xC2\xB0");
+  Serial.println("C");
+  
+}
