@@ -1,0 +1,61 @@
+//El sensor HC-SR04 debe conectarse a las entradas digitales del Arduino y el pulsador a una entrada digital. 
+//Cuando un objeto se encuentre a una distancia menor a 15 cm y el pulsador esté presionado, el LED debe 
+//encenderse. Si el objeto se aleja más allá de ese valor o el pulsador no está presionado, el LED debe apagarse. 
+//Enviar un mensaje por comunicación serial cuando se de el caso de éxito con un contador que indique el 
+//número de falsos positivo y verdaderos positivos, los falsos positivos son cuando se presiona el pulsador pero el 
+//objeto está lejos y los verdaderos positivos son cuando se cumplen ambas condiciones.
+
+const int Trigger = 4;   //Pin digital 2 para el Trigger del sensor
+const int Echo = 5;   //Pin digital 3 para el Echo del sensor
+int led = 6;
+int pul = 2;
+long t; //timepo que demora en llegar el eco
+long d; //distancia en centimetros
+int truePositives = 0;
+int falsePositives = 0;
+void setup() {
+  Serial.begin(9600);//iniciailzamos la comunicación
+  pinMode(Trigger, OUTPUT); //pin como salida
+  pinMode(Echo, INPUT);  //pin como entrada
+  digitalWrite(Trigger, LOW);//Inicializamos el pin con 0
+}
+ 
+void loop()
+{
+ int stadopul = digitalRead(pul);
+ lecturarultra();
+
+  if (d <= 15 & stadopul == HIGH){
+    digitalWrite(6, HIGH);
+    
+    Serial.print("Verdadero positivo ");
+    Serial.print(truePositives);
+    Serial.print(" Distancia: ");
+    Serial.print(d);
+    Serial.print(" cm. Falsos positivos: ");
+    Serial.println(falsePositives);
+    truePositives++;
+    delay(500);
+  } else {
+    digitalWrite(6, LOW);
+    Serial.print("Verdaderos positivos:");
+    Serial.print(truePositives);
+    Serial.print(" Distancia: ");
+    Serial.print(d);
+    Serial.print(" cm. Falsos positivos: ");
+    Serial.println(falsePositives);
+    falsePositives++;
+    delay(500);
+  }
+}
+void lecturarultra(){
+ 
+  digitalWrite(Trigger, HIGH);
+  delayMicroseconds(10);          //Enviamos un pulso de 10us
+  digitalWrite(Trigger, LOW);
+  
+  t = pulseIn(Echo, HIGH); //obtenemos el ancho del pulso
+  d = t/58.2;             //escalamos el tiempo a una distancia en cm
+
+}
+
